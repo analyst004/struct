@@ -1,0 +1,27 @@
+LIBRARY struct
+EXPORTS
+	SListInit
+    SListAppend
+    SListNext
+    SListClear
+    CreateHashTable
+    InsertHashEntry
+    FindHashEntry
+    RemoveHashEntry
+    EnumHashEntry
+    ClearHashTable
+    GetHashEntryCount
+    AddChildHashEntry
+    RemoveChildHashEntry
+    GetChildHashEntryCount
+    CloseHashTable
+    SaveHashTable
+    LoadHashTable
+    InsertAvlEntry
+    GetMinAvlEntry
+    GetMaxAvlEntry
+    FindAvlEntry
+    RemoveAvlEntry
+    ClearAvlTree
+    LoadAvlTree
+    SaveAvlTree
