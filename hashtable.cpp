@@ -51,7 +51,7 @@ errno_t CreateHashTable( uint32_t length, hashtable_t** hashtable )
   _ZeroMemory( table->HashTable, sizeof(listentry_t) * table->NumberOfBurkets );
 
   //≥ı ºªØHASHTABLE
-  for( uint32_t i = 0; i < table->NumberOfBurkets; i++ ) {
+  for( int32_t i = 0; i < table->NumberOfBurkets; i++ ) {
     listentry_t* ListHead =  &table->HashTable[i];
     ListHead->Flink = ListHead->Blink = ListHead;
   }
