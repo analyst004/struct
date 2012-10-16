@@ -1,45 +1,182 @@
-﻿/*
-	单向链表
-	1.0 kimzhang 创建 
- */ 
-#ifndef LIB_SLIST_H_
-#define LIB_SLIST_H_
+#ifndef _SLIST_H_KIMZHANG
+#define _SLIST_H_KIMZHANG
+/*
+ * Lock-less NULL terminated single linked list
+ *
+ * If there are multiple producers and multiple consumers, llist_add
+ * can be used in producers and llist_del_all can be used in
+ * consumers.  They can work simultaneously without lock.  But
+ * llist_del_first can not be used here.  Because llist_del_first
+ * depends on list->first->next does not changed if list->first is not
+ * changed during its operation, but llist_del_first, llist_add,
+ * llist_add (or llist_del_all, llist_add, llist_add) sequence in
+ * another consumer may violate that.
+ *
+ * If there are multiple producers and one consumer, llist_add can be
+ * used in producers and llist_del_all or llist_del_first can be used
+ * in the consumer.
+ *
+ * This can be summarized as follow:
+ *
+ *           |   add    | del_first |  del_all
+ * add       |    -     |     -     |     -
+ * del_first |          |     L     |     L
+ * del_all   |          |           |     -
+ *
+ * Where "-" stands for no lock is needed, while "L" stands for lock
+ * is needed.
+ *
+ * The list entries deleted via llist_del_all can be traversed with
+ * traversing function such as llist_for_each etc.  But the list
+ * entries can not be traversed safely before deleted from the list.
+ * The order of deleted entries is from the newest to the oldest added
+ * one.  If you want to traverse from the oldest to the newest, you
+ * must reverse the order by yourself before traversing.
+ *
+ * The basic atomic operation of this list is cmpxchg on long.  On
+ * architectures that don't have NMI-safe cmpxchg implementation, the
+ * list can NOT be used in NMI handlers.  So code that uses the list in
+ * an NMI handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+ *
+ */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "cmpxchg.h"
 
-#ifndef ANYSIZE
-#define ANYSIZE 	1
-#endif
+typedef struct slist_node {
+	struct slist_node *next;
+}snode_t;
 
-#ifndef _ERRCODE_DEFINED
-#define _ERRCODE_DEFINED
-typedef int errno_t;
-#endif
-
-typedef struct _snode_t {
-	struct _snode_t * next; //指向下一个节点
-	uint8_t data[ANYSIZE];
-}snode_t; 
-
-typedef struct _slist_t {
-	struct _snode_t * first;//指向第一个节点
-	struct _snode_t * last; //指向最后一个节点
-	struct _snode_t * current;
-	int32_t count;	
+typedef struct slist_head {
+	struct slist_node *first;
 }slist_t;
 
-errno_t SListInit(slist_t* slist);
+#define SLIST_HEAD_INIT(name)	{ NULL }
+#define SLIST_HEAD(name)	slist_t name = SLIST_HEAD_INIT(name)
 
-errno_t SListAppend(slist_t * slist, uint8_t* data, size_t data_size);
-
-uint8_t* SListNext(slist_t* slist);
-
-void SListClear(slist_t* slist);
-
-#ifdef __cplusplus
+/**
+ * init_llist_head - initialize lock-less list head
+ * @head:	the head for your lock-less list
+ */
+static inline void init_llist_head(slist_t *list)
+{
+	list->first = NULL;
 }
-#endif
 
-#endif
+/**
+ * llist_entry - get the struct of this entry
+ * @ptr:	the &struct llist_node pointer.
+ * @type:	the type of the struct this is embedded in.
+ * @member:	the name of the llist_node within the struct.
+ */
+#define slist_entry(ptr, type, member)		\
+	container_of(ptr, type, member)
+
+/**
+ * llist_for_each - iterate over some deleted entries of a lock-less list
+ * @pos:	the &struct llist_node to use as a loop cursor
+ * @node:	the first entry of deleted list entries
+ *
+ * In general, some entries of the lock-less list can be traversed
+ * safely only after being deleted from list, so start with an entry
+ * instead of list head.
+ *
+ * If being used on entries deleted from lock-less list directly, the
+ * traverse order is from the newest to the oldest added entry.  If
+ * you want to traverse from the oldest to the newest, you must
+ * reverse the order by yourself before traversing.
+ */
+#define slist_for_each(pos, node)			\
+	for ((pos) = (node); pos; (pos) = (pos)->next)
+
+/**
+ * llist_for_each_entry - iterate over some deleted entries of lock-less list of given type
+ * @pos:	the type * to use as a loop cursor.
+ * @node:	the fist entry of deleted list entries.
+ * @member:	the name of the llist_node with the struct.
+ *
+ * In general, some entries of the lock-less list can be traversed
+ * safely only after being removed from list, so start with an entry
+ * instead of list head.
+ *
+ * If being used on entries deleted from lock-less list directly, the
+ * traverse order is from the newest to the oldest added entry.  If
+ * you want to traverse from the oldest to the newest, you must
+ * reverse the order by yourself before traversing.
+ */
+#define slist_for_each_entry(pos, node, member)				\
+	for ((pos) = slist_entry((node), typeof(*(pos)), member);	\
+	     &(pos)->member != NULL;					\
+	     (pos) = slist_entry((pos)->member.next, typeof(*(pos)), member))
+
+
+#define slist_first_entry(list, node, member_entry, member_node)  \
+	(list)->first == NULL ? NULL : &(slist_entry((list)->first, node, member_node)->member_entry)
+
+
+#define slist_next_entry(entry, node, member_entry, member_node) 	\
+  slist_next(&(container_of(entry, node, member_entry))->member_node) == NULL?\
+  NULL:\
+  &(container_of(entry, node, member_entry))->member_entry
+
+/**
+ * llist_empty - tests whether a lock-less list is empty
+ * @head:	the list to test
+ *
+ * Not guaranteed to be accurate or up to date.  Just a quick way to
+ * test whether the list is empty without deleting something from the
+ * list.
+ */
+static inline bool slist_empty(const slist_t *head)
+{
+	return ACCESS_ONCE(head->first) == NULL;
+}
+
+static inline snode_t *llist_next(snode_t *node)
+{
+	return node->next;
+}
+
+/**
+ * llist_add - add a new entry
+ * @head:	the head for your lock-less list
+ * @new:	new entry to be added
+ *
+ * Returns true if the list was empty prior to adding this entry.
+ */
+static inline bool slist_add(slist_t *head, snode_t *new)
+{
+	snode_t *entry, *old_entry;
+
+	entry = head->first;
+	for (;;) {
+		old_entry = entry;
+		new->next = entry;
+		entry = cmpxchg(&head->first, old_entry, new);
+		if (entry == old_entry)
+			break;
+	}
+
+	return old_entry == NULL;
+}
+
+/**
+ * llist_del_all - delete all entries from lock-less list
+ * @head:	the head of lock-less list to delete all entries
+ *
+ * If list is empty, return NULL, otherwise, delete all entries and
+ * return the pointer to the first entry.  The order of entries
+ * deleted is from the newest to the oldest added one.
+ */
+static inline snode_t *slist_del_all(slist_t *head)
+{
+	return xchg(&head->first, NULL);
+}
+
+extern bool slist_add_batch(slist_t *head, 
+	snode_t *new_first,
+	snode_t *new_last);
+
+extern snode_t *llist_del_first(slist_t *head);
+
+
+#endif /* LLIST_H */
