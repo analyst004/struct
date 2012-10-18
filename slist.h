@@ -62,6 +62,11 @@ static inline void init_llist_head(slist_t *list)
 	list->first = NULL;
 }
 
+#define offsetof(type, member) ((size_t) &((type *)0)->member)
+
+#define container_of(ptr, type, member)     \
+	(type *)( (char *)(ptr) - offsetof(type,member) )
+
 /**
  * llist_entry - get the struct of this entry
  * @ptr:	the &struct llist_node pointer.
@@ -103,20 +108,28 @@ static inline void init_llist_head(slist_t *list)
  * you want to traverse from the oldest to the newest, you must
  * reverse the order by yourself before traversing.
  */
+/*
 #define slist_for_each_entry(pos, node, member)				\
 	for ((pos) = slist_entry((node), typeof(*(pos)), member);	\
 	     &(pos)->member != NULL;					\
 	     (pos) = slist_entry((pos)->member.next, typeof(*(pos)), member))
+*/
+#define slist_for_each_entry(pos, list, type, member_entry, member_node)   \
+  	for ((pos) = slist_first_entry((list), type, member_entry, member_node); \
+  		(pos) != NULL; \
+  		(pos) = slist_next_entry((pos), type, member_entry, member_node)) 
 
+#define slist_first_entry(list, type, member_entry, member_node)  \
+	(list)->first == NULL ? \
+		NULL : \
+		&((type*)slist_entry((list)->first, type, member_node))->member_entry
 
-#define slist_first_entry(list, node, member_entry, member_node)  \
-	(list)->first == NULL ? NULL : &(slist_entry((list)->first, node, member_node)->member_entry)
-
-
-#define slist_next_entry(entry, node, member_entry, member_node) 	\
-  slist_next(&(container_of(entry, node, member_entry))->member_node) == NULL?\
+#define slist_next_entry(entry, type, member_entry, member_node) 	\
+  slist_next(&(((type*)container_of(entry, type, member_entry))->member_node)) == NULL?\
   NULL:\
-  &(container_of(entry, node, member_entry))->member_entry
+  &(((type*)container_of(slist_next(&(((type*)container_of(entry, type, member_entry))->member_node)), type, member_node))->member_entry)
+
+
 
 /**
  * llist_empty - tests whether a lock-less list is empty
@@ -128,10 +141,10 @@ static inline void init_llist_head(slist_t *list)
  */
 static inline bool slist_empty(const slist_t *head)
 {
-	return ACCESS_ONCE(head->first) == NULL;
+	return head->first == NULL;
 }
 
-static inline snode_t *llist_next(snode_t *node)
+static inline snode_t *slist_next(snode_t *node)
 {
 	return node->next;
 }
@@ -143,15 +156,16 @@ static inline snode_t *llist_next(snode_t *node)
  *
  * Returns true if the list was empty prior to adding this entry.
  */
-static inline bool slist_add(slist_t *head, snode_t *new)
+static inline bool slist_add(slist_t *head, snode_t *new_node)
 {
 	snode_t *entry, *old_entry;
 
 	entry = head->first;
 	for (;;) {
 		old_entry = entry;
-		new->next = entry;
-		entry = cmpxchg(&head->first, old_entry, new);
+		new_node->next = entry;
+
+		entry = (snode_t*)cmpxchg(&head->first, old_entry, new_node);
 		if (entry == old_entry)
 			break;
 	}
@@ -169,14 +183,20 @@ static inline bool slist_add(slist_t *head, snode_t *new)
  */
 static inline snode_t *slist_del_all(slist_t *head)
 {
-	return xchg(&head->first, NULL);
+	return (snode_t*)xchg(&head->first, 0);
 }
+
+
+#define slist_for_each_safe(list, type, member, var)   \
+     for(snode_t *i =(list)->first, *t = NULL; \
+    i != NULL && (t = i->next) && ((var) = container_of(i, type, member)) != NULL; \
+    i = t, slist_del_all(list))
 
 extern bool slist_add_batch(slist_t *head, 
 	snode_t *new_first,
 	snode_t *new_last);
 
-extern snode_t *llist_del_first(slist_t *head);
+extern snode_t *slist_del_first(slist_t *head);
 
 
 #endif /* LLIST_H */

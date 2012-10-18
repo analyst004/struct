@@ -1,7 +1,7 @@
-﻿#include <stdint.h>
-#include <stdlib.h>
+﻿#include <stdlib.h>
 #include <memory.h>
 #include <stdio.h>
+#include "typedef.h"
 #include "avltree.h"
 #include "errno.h"
 

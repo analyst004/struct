@@ -1,8 +1,8 @@
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <memory.h>
 #include <errno.h>
+#include "typedef.h"
 #include "hashtable.h"
 
 #define 	TAG                     'ZPER'

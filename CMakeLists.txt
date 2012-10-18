@@ -6,7 +6,6 @@ PROJECT(struct)
 SET(SRC_LIST
 avltree.cpp
 hashtable.cpp
-slist.cpp
 )
 
 #static library
