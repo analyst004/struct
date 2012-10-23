@@ -11,6 +11,16 @@
 #include "hlist.h"
 #include "rbtree.h"
 
+#ifdef __GNUC__
+#ifdef __MINGW32__
+
+#else
+//linux or linux
+#define _snprintf snprintf
+#define _snwprintf swprintf
+#endif
+#endif
+
 typedef struct _node_t
 {
 	int32_t		id;
