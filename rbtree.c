@@ -21,9 +21,15 @@
   linux/lib/rbtree.c
 */
 
-#include <linux/rbtree_augmented.h>
-#include <linux/export.h>
 
+//#include <linux/export.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "rbtree.h"
+#include "rbtree_augmented.h"
+
+#define true   1
+#define false  0
 /*
  * red-black trees properties:  http://en.wikipedia.org/wiki/Rbtree
  *
@@ -44,12 +50,12 @@
  *  parentheses and have some accompanying text comment.
  */
 
-static inline void rb_set_black(struct rb_node *rb)
+void rb_set_black(struct rb_node *rb)
 {
 	rb->__rb_parent_color |= RB_BLACK;
 }
 
-static inline struct rb_node *rb_red_parent(struct rb_node *red)
+struct rb_node *rb_red_parent(struct rb_node *red)
 {
 	return (struct rb_node *)red->__rb_parent_color;
 }
@@ -59,7 +65,7 @@ static inline struct rb_node *rb_red_parent(struct rb_node *red)
  * - old's parent and color get assigned to new
  * - old gets assigned new as a parent and 'color' as a color.
  */
-static inline void
+void
 __rb_rotate_set_parents(struct rb_node *old, struct rb_node *new,
 			struct rb_root *root, int color)
 {
@@ -69,7 +75,7 @@ __rb_rotate_set_parents(struct rb_node *old, struct rb_node *new,
 	__rb_change_child(old, new, parent, root);
 }
 
-static __always_inline void
+void
 __rb_insert(struct rb_node *node, struct rb_root *root,
 	    void (*augment_rotate)(struct rb_node *old, struct rb_node *new))
 {
@@ -194,7 +200,7 @@ __rb_insert(struct rb_node *node, struct rb_root *root,
 	}
 }
 
-__always_inline void
+void
 __rb_erase_color(struct rb_node *parent, struct rb_root *root,
 	void (*augment_rotate)(struct rb_node *old, struct rb_node *new))
 {
@@ -355,7 +361,7 @@ __rb_erase_color(struct rb_node *parent, struct rb_root *root,
 		}
 	}
 }
-EXPORT_SYMBOL(__rb_erase_color);
+//EXPORT_SYMBOL(__rb_erase_color);
 
 /*
  * Non-augmented rbtree manipulation functions.
@@ -364,11 +370,11 @@ EXPORT_SYMBOL(__rb_erase_color);
  * out of the rb_insert_color() and rb_erase() function definitions.
  */
 
-static inline void dummy_propagate(struct rb_node *node, struct rb_node *stop) {}
-static inline void dummy_copy(struct rb_node *old, struct rb_node *new) {}
-static inline void dummy_rotate(struct rb_node *old, struct rb_node *new) {}
+/*static inline*/ void dummy_propagate(struct rb_node *node, struct rb_node *stop) {}
+/*static inline*/  void dummy_copy(struct rb_node *old, struct rb_node *new) {}
+/*static inline*/  void dummy_rotate(struct rb_node *old, struct rb_node *new) {}
 
-static const struct rb_augment_callbacks dummy_callbacks = {
+/*static*/ const struct rb_augment_callbacks dummy_callbacks = {
 	dummy_propagate, dummy_copy, dummy_rotate
 };
 
@@ -376,13 +382,13 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
 {
 	__rb_insert(node, root, dummy_rotate);
 }
-EXPORT_SYMBOL(rb_insert_color);
+//EXPORT_SYMBOL(rb_insert_color);
 
 void rb_erase(struct rb_node *node, struct rb_root *root)
 {
 	rb_erase_augmented(node, root, &dummy_callbacks);
 }
-EXPORT_SYMBOL(rb_erase);
+//EXPORT_SYMBOL(rb_erase);
 
 /*
  * Augmented rbtree manipulation functions.
@@ -396,7 +402,7 @@ void __rb_insert_augmented(struct rb_node *node, struct rb_root *root,
 {
 	__rb_insert(node, root, augment_rotate);
 }
-EXPORT_SYMBOL(__rb_insert_augmented);
+//EXPORT_SYMBOL(__rb_insert_augmented);
 
 /*
  * This function returns the first node (in sort order) of the tree.
@@ -412,7 +418,7 @@ struct rb_node *rb_first(const struct rb_root *root)
 		n = n->rb_left;
 	return n;
 }
-EXPORT_SYMBOL(rb_first);
+//EXPORT_SYMBOL(rb_first);
 
 struct rb_node *rb_last(const struct rb_root *root)
 {
@@ -425,7 +431,7 @@ struct rb_node *rb_last(const struct rb_root *root)
 		n = n->rb_right;
 	return n;
 }
-EXPORT_SYMBOL(rb_last);
+//EXPORT_SYMBOL(rb_last);
 
 struct rb_node *rb_next(const struct rb_node *node)
 {
@@ -457,7 +463,7 @@ struct rb_node *rb_next(const struct rb_node *node)
 
 	return parent;
 }
-EXPORT_SYMBOL(rb_next);
+//EXPORT_SYMBOL(rb_next);
 
 struct rb_node *rb_prev(const struct rb_node *node)
 {
@@ -486,7 +492,7 @@ struct rb_node *rb_prev(const struct rb_node *node)
 
 	return parent;
 }
-EXPORT_SYMBOL(rb_prev);
+//EXPORT_SYMBOL(rb_prev);
 
 void rb_replace_node(struct rb_node *victim, struct rb_node *new,
 		     struct rb_root *root)
@@ -503,4 +509,4 @@ void rb_replace_node(struct rb_node *victim, struct rb_node *new,
 	/* Copy the pointers/colour from the victim to the replacement */
 	*new = *victim;
 }
-EXPORT_SYMBOL(rb_replace_node);
+//EXPORT_SYMBOL(rb_replace_node);

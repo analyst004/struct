@@ -18,7 +18,8 @@ typedef struct hlist_node {
 #define HLIST_HEAD_INIT { .first = NULL }
 #define HLIST_HEAD(name) hlist_t name = {  .first = NULL }
 #define INIT_HLIST_HEAD(ptr) ((ptr)->first = NULL)
-static inline void INIT_HLIST_NODE(struct hlist_node *h)
+
+static inline void INIT_HLIST_NODE(hnode_t *h)
 {
 	h->next = NULL;
 	h->pprev = NULL;
@@ -36,8 +37,8 @@ static inline int hlist_empty(const hlist_t *h)
 
 static inline void __hlist_del(hnode_t *n)
 {
-	struct hlist_node *next = n->next;
-	struct hlist_node **pprev = n->pprev;
+	hnode_t *next = n->next;
+	hnode_t **pprev = n->pprev;
 	*pprev = next;
 	if (next)
 		next->pprev = pprev;
@@ -46,8 +47,8 @@ static inline void __hlist_del(hnode_t *n)
 static inline void hlist_del(hnode_t *n)
 {
 	__hlist_del(n);
-	n->next = LIST_POISON1;
-	n->pprev = LIST_POISON2;
+	n->next = n; /*LIST_POISON1;*/
+	n->pprev = &n; /* LIST_POISON2;*/
 }
 
 static inline void hlist_del_init(hnode_t *n)
@@ -97,7 +98,7 @@ static inline void hlist_add_fake(hnode_t *n)
  * Move a list from one list head to another. Fixup the pprev
  * reference of the first entry if it exists.
  */
-static inline void hlist_move_list(hlist_t *old, hnode_t *to)
+static inline void hlist_move_list(hlist_t *old, hlist_t *to)
 {
 	to->first = old->first;
 	if (to->first)
@@ -158,11 +159,29 @@ static inline void hlist_move_list(hlist_t *old, hnode_t *to)
  * @head:	the head for your list.
  * @member:	the name of the hlist_node within the struct.
  */
-#define hlist_for_each_entry_safe(tpos, pos, n, head, member) 		 \
+/*
+#define hlist_for_each_entry_safe(tpos, pos, n, head, type, member) 		 \
 	for (pos = (head)->first;					 \
 	     pos && ({ n = pos->next; 1; }) && 				 \
-		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
+		({ tpos = hlist_entry(pos, type, member); 1;}); \
 	     pos = n)
+*/
+#define hlist_for_each_entry_safe(pos, head, type, member) 	\
+	for (hnode_t *c = (head)->first, *n = NULL;		\
+	     c && \
+	     ((n = c->next) == NULL || n != NULL) && \
+	     ((pos) = hlist_entry(c, type, member)) != NULL;	\
+	     c = n)
 
+#define INIT_HASH_TABLE(name, size)	\
+	hlist_t	name[size]; for (int i=0; i<size; i++) INIT_HLIST_HEAD(&name[i]);
+
+#define HTABLE_INDEX(h, s) ((h) & (s-1))
+
+static inline
+hlist_t* htable_burket(hlist_t* table, int burk_size, uint32_t hash)
+{
+	return &table[HTABLE_INDEX(hash, burk_size)];
+}
 
 #endif /*_HLIST_H_KIMZHANG*/

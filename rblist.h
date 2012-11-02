@@ -1,8 +1,7 @@
 #ifndef __PERF_RBLIST_H
 #define __PERF_RBLIST_H
 
-#include <linux/rbtree.h>
-#include <stdbool.h>
+#include "rbtree.h"
 
 /*
  * create node structs of the form:

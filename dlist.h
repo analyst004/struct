@@ -1,6 +1,6 @@
 #ifndef _DLIST_H_KIMZHANG
 #define _DLIST_H_KIMZHANG
-
+#include "contain.h"
 /*
 #include <linux/types.h>
 #include <linux/stddef.h>
@@ -28,9 +28,6 @@
 # define POISON_POINTER_DELTA 0
 #endif
 
-#define container_of(ptr, type, member)     \
-	(type *)( (char *)(ptr) - offsetof(type,member) )
-
 /*
  * These are non-NULL pointers that will result in page faults
  * under normal circumstances, used to verify that nobody uses
@@ -54,12 +51,12 @@ typedef struct list_head {
  * using the generic single-entry routines.
  */
 
-#define LIST_HEAD_INIT(name) { &(name), &(name) }
+#define DLIST_HEAD_INIT(name) { &(name), &(name) }
 
-#define LIST_HEAD(name) \
-	dlist_t name = LIST_HEAD_INIT(name)
+#define DLIST_HEAD(name) \
+	dlist_t name = DLIST_HEAD_INIT(name)
 
-static inline void INIT_LIST_HEAD(dlist_t *list)
+static inline void dlist_init(dlist_t *list)
 {
 	list->next = list;
 	list->prev = list;
@@ -87,7 +84,7 @@ static inline void __list_add(dnode_t *entry, dnode_t *prev, dnode_t *next)
  * Insert a new entry after the specified head.
  * This is good for implementing stacks.
  */
-static inline void list_add(dnode_t *entry, dlist_t *list)
+static inline void dlist_add(dlist_t *list, dnode_t *entry)
 {
 	__list_add(entry, list, list->next);
 }
@@ -101,7 +98,7 @@ static inline void list_add(dnode_t *entry, dlist_t *list)
  * Insert a new entry before the specified head.
  * This is useful for implementing queues.
  */
-static inline void list_add_tail(dnode_t *entry, dlist_t *list)
+static inline void dlist_add_tail(dlist_t *list, dnode_t *entry)
 {
 	__list_add(entry, list->prev, list);
 }
@@ -130,12 +127,12 @@ static inline void __list_remove_entry(dnode_t *entry)
 	__list_remove(entry->prev, entry->next);
 }
 
-static inline void list_remove(dnode_t *entry)
+static inline void dlist_remove(dnode_t *entry)
 {
 	__list_remove(entry->prev, entry->next);
-	entry->next = LIST_POISON1;
-	entry->prev = LIST_POISON2;
-	INIT_LIST_HEAD(entry);
+	entry->next = entry; /*LIST_POISON1;*/
+	entry->prev = entry; /*LIST_POISON2;*/
+	dlist_init(entry);
 }
 
 /**
@@ -145,13 +142,13 @@ static inline void list_remove(dnode_t *entry)
  *
  * If @old was empty, it will be overwritten.
  */
-static inline void list_replace(dnode_t *old_entry, dnode_t *new_entry)
+static inline void dlist_replace(dnode_t *old_entry, dnode_t *new_entry)
 {
 	new_entry->next = old_entry->next;
 	new_entry->next->prev = new_entry;
 	new_entry->prev = old_entry->prev;
 	new_entry->prev->next = new_entry;
-	INIT_LIST_HEAD(old_entry);
+	dlist_init(old_entry);
 }
 
 /**
@@ -159,10 +156,10 @@ static inline void list_replace(dnode_t *old_entry, dnode_t *new_entry)
  * @entry: the entry to move
  * @new_list: the head that will precede our entry
  */
-static inline void list_move(dnode_t *entry, dlist_t *new_list)
+static inline void dlist_move(dlist_t *new_list, dnode_t *entry)
 {
 	__list_remove_entry(entry);
-	list_add(entry, new_list);
+	dlist_add(new_list, entry);
 }
 
 /**
@@ -170,10 +167,10 @@ static inline void list_move(dnode_t *entry, dlist_t *new_list)
  * @entry: the entry to move
  * @new_list: the head that will follow our entry
  */
-static inline void list_move_tail(dnode_t *entry, dlist_t *new_list)
+static inline void dlist_move_tail(dlist_t *new_list, dnode_t *entry)
 {
 	__list_remove_entry(entry);
-	list_add_tail(entry, new_list);
+	dlist_add_tail(new_list, entry);
 }
 
 /**
@@ -181,7 +178,8 @@ static inline void list_move_tail(dnode_t *entry, dlist_t *new_list)
  * @list: the entry to test
  * @head: the head of the list
  */
-static inline bool list_is_last_entry(const dnode_t *entry, const dlist_t *list)
+static inline 
+bool dlist_is_last_entry(const dlist_t *list, const dnode_t *entry)
 {
 	return entry->next == list;
 }
@@ -190,7 +188,7 @@ static inline bool list_is_last_entry(const dnode_t *entry, const dlist_t *list)
  * list_empty - tests whether a list is empty
  * @head: the list to test.
  */
-static inline bool list_empty(const dlist_t *list)
+static inline bool dlist_empty(const dlist_t *list)
 {
 	return list->next == list;
 }
@@ -208,7 +206,7 @@ static inline bool list_empty(const dlist_t *list)
  * to the list entry is list_del_init(). Eg. it cannot be used
  * if another CPU could re-list_add() it.
  */
-static inline bool list_empty_careful(const dlist_t *head)
+static inline bool dlist_empty_careful(const dlist_t *head)
 {
 	dnode_t *next = head->next;
 	return (next == head) && (next == head->prev);
@@ -218,13 +216,13 @@ static inline bool list_empty_careful(const dlist_t *head)
  * list_rotate_left - rotate the list to the left
  * @head: the head of the list
  */
-static inline void list_rotate_left(dlist_t *list)
+static inline void dlist_rotate_left(dlist_t *list)
 {
 	dnode_t *first = NULL;
 
-	if (!list_empty(list)) {
+	if (!dlist_empty(list)) {
 		first = list->next;
-		list_move_tail(first, list);
+		dlist_move_tail(first, list);
 	}
 }
 
@@ -232,13 +230,13 @@ static inline void list_rotate_left(dlist_t *list)
  * list_is_singular - tests whether a list has just one entry.
  * @head: the list to test.
  */
-static inline bool list_is_singular(const dlist_t *head)
+static inline bool dlist_is_singular(const dlist_t *head)
 {
-	return !list_empty(head) && (head->next == head->prev);
+	return !dlist_empty(head) && (head->next == head->prev);
 }
 
-static inline void __list_cut_position(struct list_head *list,
-		struct list_head *head, dnode_t *entry)
+static inline 
+void __list_cut_position(dlist_t *list, dlist_t *head, dnode_t *entry)
 {
 	struct list_head *new_first = entry->next;
 	list->next = head->next;
@@ -263,18 +261,20 @@ static inline void __list_cut_position(struct list_head *list,
  * losing its data.
  *
  */
-static inline void list_cut_position(
-	dlist_t *new_list, 
+static inline void dlist_cut_position(
 	dlist_t *old_list, 
-	dnode_t *entry)
+	dnode_t *entry, 
+	dlist_t *new_list)
 {
-	if (list_empty(old_list))
+	if (dlist_empty(old_list))
 		return;
-	if (list_is_singular(old_list) &&
-		(old_list->next != entry && old_list != entry))
+	if (dlist_is_singular(old_list) &&
+		(old_list->next != entry && 
+		old_list != entry)) {
 		return;
+	}
 	if (entry == old_list)
-		INIT_LIST_HEAD(list);
+		dlist_init(new_list);
 	else
 		__list_cut_position(new_list, old_list, entry);
 }
@@ -299,9 +299,9 @@ static inline void __list_splice(
  * @list: the new list to add.
  * @head: the place to add it in the first list.
  */
-static inline void list_join(const dlist_t *add, dlist_t *to)
+static inline void dlist_join(const dlist_t *add, dlist_t *to)
 {
-	if (!list_empty(add))
+	if (!dlist_empty(add))
 		__list_splice(add, to, to->next);
 }
 
@@ -310,9 +310,9 @@ static inline void list_join(const dlist_t *add, dlist_t *to)
  * @list: the new list to add.
  * @head: the place to add it in the first list.
  */
-static inline void list_join_tail(dlist_t *add, dlist_t *to)
+static inline void dlist_join_tail(dlist_t *add, dlist_t *to)
 {
-	if (!list_empty(add))
+	if (!dlist_empty(add))
 		__list_splice(add, to->prev, to);
 }
 
@@ -322,7 +322,7 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  * @type:	the type of the struct this is embedded in.
  * @member:	the name of the list_struct within the struct.
  */
-#define list_entry(ptr, type, member) \
+#define dlist_entry(ptr, type, member) \
 	container_of(ptr, type, member)
 
 /**
@@ -333,15 +333,19 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  *
  * Note, that list is expected to be not empty.
  */
-#define list_first_entry(ptr, type, member) \
-	list_entry((ptr)->next, type, member)
+#define dlist_first_entry(ptr, type, member) \
+	dlist_entry((ptr)->next, type, member)
+
+#define dlist_next_entry(ptr, head, type, member) \
+	(head) == (ptr)->member.next? NULL: \
+	dlist_entry((ptr)->member.next, type, member)
 
 /**
  * list_for_each	-	iterate over a list
  * @pos:	the &struct list_head to use as a loop cursor.
  * @head:	the head for your list.
  */
-#define list_for_each(pos, head) \
+#define dlist_for_each(pos, head) \
 	for (pos = (head)->next; pos != (head); pos = pos->next)
 
 /**
@@ -360,7 +364,7 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  * @pos:	the &struct list_head to use as a loop cursor.
  * @head:	the head for your list.
  */
-#define list_for_each_prev(pos, head) \
+#define dlist_for_each_prev(pos, head) \
 	for (pos = (head)->prev; pos != (head); pos = pos->prev)
 
 /**
@@ -369,7 +373,7 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  * @n:		another &struct list_head to use as temporary storage
  * @head:	the head for your list.
  */
-#define list_for_each_safe(pos, n, head) \
+#define dlist_for_each_safe(pos, n, head) \
 	for (pos = (head)->next, n = pos->next; pos != (head); \
 		pos = n, n = pos->next)
 
@@ -379,7 +383,7 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  * @n:		another &struct list_head to use as temporary storage
  * @head:	the head for your list.
  */
-#define list_for_each_prev_safe(pos, n, head) \
+#define dlist_for_each_prev_safe(pos, n, head) \
 	for (pos = (head)->prev, n = pos->prev; \
 	     pos != (head); \
 	     pos = n, n = pos->prev)
@@ -390,10 +394,10 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  * @head:	the head for your list.
  * @member:	the name of the list_struct within the struct.
  */
-#define list_for_each_entry(pos, head, member)				\
-	for (pos = list_entry((head)->next, typeof(*pos), member);	\
+#define dlist_for_each_entry(pos, head, type, member)				\
+	for (pos = dlist_entry((head)->next, type, member);	\
 	     &pos->member != (head); 	\
-	     pos = list_entry(pos->member.next, typeof(*pos), member))
+	     pos = dlist_entry(pos->member.next, type, member))
 
 /**
  * list_for_each_entry_reverse - iterate backwards over list of given type.
@@ -401,10 +405,10 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  * @head:	the head for your list.
  * @member:	the name of the list_struct within the struct.
  */
-#define list_for_each_entry_reverse(pos, head, member)			\
-	for (pos = list_entry((head)->prev, typeof(*pos), member);	\
+#define dlist_for_each_entry_reverse(pos, head, type, member)			\
+	for (pos = dlist_entry((head)->prev, type, member);	\
 	     &pos->member != (head); 	\
-	     pos = list_entry(pos->member.prev, typeof(*pos), member))
+	     pos = dlist_entry(pos->member.prev, type, member))
 
 /**
  * list_prepare_entry - prepare a pos entry for use in list_for_each_entry_continue()
@@ -414,8 +418,8 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  *
  * Prepares a pos entry for use as a start point in list_for_each_entry_continue().
  */
-#define list_prepare_entry(pos, head, member) \
-	((pos) ? : list_entry(head, typeof(*pos), member))
+#define dlist_prepare_entry(pos, head, type, member) \
+	((pos) ? : dlist_entry(head, type, member))
 
 /**
  * list_for_each_entry_continue - continue iteration over list of given type
@@ -426,10 +430,10 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  * Continue to iterate over list of given type, continuing after
  * the current position.
  */
-#define list_for_each_entry_continue(pos, head, member) 		\
-	for (pos = list_entry(pos->member.next, typeof(*pos), member);	\
+#define dlist_for_each_entry_continue(pos, head, type, member) 		\
+	for (pos = dlist_entry(pos->member.next, type, member);	\
 	     &pos->member != (head);	\
-	     pos = list_entry(pos->member.next, typeof(*pos), member))
+	     pos = dlist_entry(pos->member.next, type, member))
 
 /**
  * list_for_each_entry_continue_reverse - iterate backwards from the given point
@@ -440,10 +444,10 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  * Start to iterate over list of given type backwards, continuing after
  * the current position.
  */
-#define list_for_each_entry_continue_reverse(pos, head, member)		\
-	for (pos = list_entry(pos->member.prev, typeof(*pos), member);	\
+#define dlist_for_each_entry_continue_reverse(pos, head, type, member)		\
+	for (pos = dlist_entry(pos->member.prev, type, member);	\
 	     &pos->member != (head);	\
-	     pos = list_entry(pos->member.prev, typeof(*pos), member))
+	     pos = dlist_entry(pos->member.prev, type, member))
 
 /**
  * list_for_each_entry_from - iterate over list of given type from the current point
@@ -453,9 +457,9 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  *
  * Iterate over list of given type, continuing from current position.
  */
-#define list_for_each_entry_from(pos, head, member) 			\
+#define dlist_for_each_entry_from(pos, head, type, member) 			\
 	for (; &pos->member != (head);	\
-	     pos = list_entry(pos->member.next, typeof(*pos), member))
+	     pos = dlist_entry(pos->member.next, type, member))
 
 /**
  * list_for_each_entry_safe - iterate over list of given type safe against removal of list entry
@@ -464,11 +468,11 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  * @head:	the head for your list.
  * @member:	the name of the list_struct within the struct.
  */
-#define list_for_each_entry_safe(pos, n, head, member)			\
-	for (pos = list_entry((head)->next, typeof(*pos), member),	\
-		n = list_entry(pos->member.next, typeof(*pos), member);	\
+#define dlist_for_each_entry_safe(pos, n, head, type, member)			\
+	for (pos = dlist_entry((head)->next, type, member),	\
+		n = dlist_entry(pos->member.next, type, member);	\
 	     &pos->member != (head); 					\
-	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
+	     pos = n, n = dlist_entry(n->member.next, type, member))
 
 /**
  * list_for_each_entry_safe_continue - continue list iteration safe against removal
@@ -480,11 +484,11 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  * Iterate over list of given type, continuing after current point,
  * safe against removal of list entry.
  */
-#define list_for_each_entry_safe_continue(pos, n, head, member) 		\
-	for (pos = list_entry(pos->member.next, typeof(*pos), member), 		\
-		n = list_entry(pos->member.next, typeof(*pos), member);		\
+#define dlist_for_each_entry_safe_continue(pos, n, head, type, member) 		\
+	for (pos = dlist_entry(pos->member.next, type, member), 		\
+		n = dlist_entry(pos->member.next, type, member);		\
 	     &pos->member != (head);						\
-	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
+	     pos = n, n = dlist_entry(n->member.next, type, member))
 
 /**
  * list_for_each_entry_safe_from - iterate over list from current point safe against removal
@@ -496,10 +500,10 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  * Iterate over list of given type from current point, safe against
  * removal of list entry.
  */
-#define list_for_each_entry_safe_from(pos, n, head, member) 			\
-	for (n = list_entry(pos->member.next, typeof(*pos), member);		\
+#define dlist_for_each_entry_safe_from(pos, n, head, type, member) 			\
+	for (n = dlist_entry(pos->member.next, type, member);		\
 	     &pos->member != (head);						\
-	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
+	     pos = n, n = dlist_entry(n->member.next, type, member))
 
 /**
  * list_for_each_entry_safe_reverse - iterate backwards over list safe against removal
@@ -511,11 +515,11 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  * Iterate backwards over list of given type, safe against removal
  * of list entry.
  */
-#define list_for_each_entry_safe_reverse(pos, n, head, member)		\
-	for (pos = list_entry((head)->prev, typeof(*pos), member),	\
-		n = list_entry(pos->member.prev, typeof(*pos), member);	\
+#define dlist_for_each_entry_safe_reverse(pos, n, head, type, member)		\
+	for (pos = dlist_entry((head)->prev, type, member),	\
+		n = dlist_entry(pos->member.prev, type, member);	\
 	     &pos->member != (head); 					\
-	     pos = n, n = list_entry(n->member.prev, typeof(*n), member))
+	     pos = n, n = dlist_entry(n->member.prev, type, member))
 
 /**
  * list_safe_reset_next - reset a stale list_for_each_entry_safe loop
@@ -529,8 +533,8 @@ static inline void list_join_tail(dlist_t *add, dlist_t *to)
  * and list_safe_reset_next is called after re-taking the lock and before
  * completing the current iteration of the loop body.
  */
-#define list_safe_reset_next(pos, n, member)				\
-	n = list_entry(pos->member.next, typeof(*pos), member)
+#define dlist_safe_reset_next(pos, n, type, member)				\
+	n = dlist_entry(pos->member.next, type, member)
 
 
 #endif /*_DLIST_H_KIMZHANG*/

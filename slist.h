@@ -41,6 +41,7 @@
  */
 
 #include "cmpxchg.h"
+#include "contain.h"
 
 typedef struct slist_node {
 	struct slist_node *next;
@@ -61,11 +62,6 @@ static inline void init_llist_head(slist_t *list)
 {
 	list->first = NULL;
 }
-
-#define offsetof(type, member) ((size_t) &((type *)0)->member)
-
-#define container_of(ptr, type, member)     \
-	(type *)( (char *)(ptr) - offsetof(type,member) )
 
 /**
  * llist_entry - get the struct of this entry
@@ -187,16 +183,9 @@ static inline snode_t *slist_del_all(slist_t *head)
 }
 
 
-#define slist_for_each_safe(list, type, member, var)   \
+#define slist_for_each_safe(var, list, type, member)   \
      for(snode_t *i =(list)->first, *t = NULL; \
     i != NULL && ((t = i->next) == NULL || t != NULL) && ((var) = container_of(i, type, member)) != NULL; \
     i = t, slist_del_all(list))
-
-extern bool slist_add_batch(slist_t *head, 
-	snode_t *new_first,
-	snode_t *new_last);
-
-extern snode_t *slist_del_first(slist_t *head);
-
 
 #endif /* LLIST_H */

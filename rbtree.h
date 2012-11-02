@@ -16,7 +16,7 @@
   along with this program; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-  linux/include/linux/rbtree.h
+  rbtree.h
 
   To use rbtrees you'll have to implement your own insert and search cores.
   This will avoid us to use callbacks and to drop drammatically performances.
@@ -26,17 +26,20 @@
   See Documentation/rbtree.txt for documentation and samples.
 */
 
-#ifndef	_LINUX_RBTREE_H
-#define	_LINUX_RBTREE_H
+#ifndef	_RBTREE_H
+#define	_RBTREE_H
 
-#include <linux/kernel.h>
-#include <linux/stddef.h>
+//#include <linux/kernel.h>
+//#include <linux/stddef.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct rb_node {
 	unsigned long  __rb_parent_color;
 	struct rb_node *rb_right;
 	struct rb_node *rb_left;
-} __attribute__((aligned(sizeof(long))));
+} /*__attribute__((aligned(sizeof(long))))*/;
     /* The alignment might seem pointless, but allegedly CRIS needs it */
 
 struct rb_root {
@@ -58,22 +61,24 @@ struct rb_root {
 	((node)->__rb_parent_color = (unsigned long)(node))
 
 
-extern void rb_insert_color(struct rb_node *, struct rb_root *);
-extern void rb_erase(struct rb_node *, struct rb_root *);
+void rb_insert_color(struct rb_node *, struct rb_root *);
+void rb_erase(struct rb_node *, struct rb_root *);
 
 
 /* Find logical next and previous nodes in a tree */
-extern struct rb_node *rb_next(const struct rb_node *);
-extern struct rb_node *rb_prev(const struct rb_node *);
-extern struct rb_node *rb_first(const struct rb_root *);
-extern struct rb_node *rb_last(const struct rb_root *);
+struct rb_node *rb_next(const struct rb_node *);
+struct rb_node *rb_prev(const struct rb_node *);
+struct rb_node *rb_first(const struct rb_root *);
+struct rb_node *rb_last(const struct rb_root *);
 
 /* Fast replacement of a single node without remove/rebalance/add/rebalance */
-extern void rb_replace_node(struct rb_node *victim, struct rb_node *new, 
+void rb_replace_node(struct rb_node *victim, struct rb_node *new_node, 
 			    struct rb_root *root);
 
-static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
-				struct rb_node ** rb_link)
+static void rb_link_node(
+    struct rb_node * node, 
+    struct rb_node * parent,
+		struct rb_node ** rb_link)
 {
 	node->__rb_parent_color = (unsigned long)parent;
 	node->rb_left = node->rb_right = NULL;
@@ -81,4 +86,22 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
 	*rb_link = node;
 }
 
-#endif	/* _LINUX_RBTREE_H */
+#define rb_find(root, compare, key, member_key, type, member) \
+({ \
+    struct rb_node *node = root->rb_node; \
+    while (node) { \
+        type* data = container_of(node, type, member); \
+        int result = (compare)(key, data->member_key); \
+        if (result < 0) node = node->rb_left;  \
+        else if (result > 0) node = node->rb_right; \
+        else return data; \
+    } \
+    return NULL;  \
+})
+
+#ifdef __cplusplus
+}
+#endif
+
+
+#endif	/* _RBTREE_H */
