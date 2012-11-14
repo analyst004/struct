@@ -2,7 +2,6 @@
 # by analyst004
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 PROJECT(struct)
-
 SET(SRC_LIST
 avltree.cpp
 hashtable.cpp

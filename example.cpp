@@ -71,15 +71,17 @@ bool my_insert(struct rb_root *root, node_t *data)
     return true;
 }
 
+/*
 node_t* my_remove(struct rb_root* root, char* name)
 {
-	node_t* node = rb_find(root, strcmp, name, name, node_t, rbnode);
+	node_t* node = (node_t*)rb_find(root, strcmp, name, name, node_t, rbnode);
 	if (node) {
 		rb_erase(&node->rbnode, root);
 
 	} 
 	return node;
 }
+*/
 
 node_t* my_first(struct rb_root* root)
 {
@@ -114,8 +116,8 @@ void test_rbtree()
 		printf("%s", node->name);
 	}
 
-	node = my_remove(&root, "N5823");
-	free(node);
+	//node = my_remove(&root, "N5823");
+	//free(node);
 	node = NULL;
 
 	int count = 0;
@@ -123,7 +125,8 @@ void test_rbtree()
 	while (next) {
 		pos = next;
 		next = my_next(pos);
-		my_remove(&root, pos->name);
+		//my_remove(&root, pos->name);
+		rb_erase(&pos->rbnode, &root);
 		free(pos);
 		count++;
 	}
