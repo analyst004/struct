@@ -55,10 +55,10 @@ typedef struct slist_head {
 #define SLIST_HEAD(name)	slist_t name = SLIST_HEAD_INIT(name)
 
 /**
- * init_llist_head - initialize lock-less list head
- * @head:	the head for your lock-less list
+ * slist_init - initialize lock-less list head
+ * @list:	the head for your lock-less list
  */
-static inline void init_llist_head(slist_t *list)
+static inline void slist_init(slist_t *list)
 {
 	list->first = NULL;
 }
@@ -168,6 +168,7 @@ static inline bool slist_add(slist_t *head, snode_t *new_node)
 
 	return old_entry == NULL;
 }
+
 
 /**
  * llist_del_all - delete all entries from lock-less list
