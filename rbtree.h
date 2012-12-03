@@ -31,6 +31,7 @@
 
 //#include <linux/kernel.h>
 //#include <linux/stddef.h>
+#include "typedef.h"
 #ifdef __cplusplus
 extern "C" {
 #endif

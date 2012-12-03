@@ -9,6 +9,7 @@
 #include "jhash.h"
 #include "dlist.h"
 #include "hlist.h"
+#include "slist.h"
 #include "rbtree.h"
 
 #ifdef __GNUC__
@@ -24,6 +25,7 @@
 typedef struct _node_t
 {
 	int32_t		id;
+	snode_t 	snode;
 	dnode_t 	node;
 	hnode_t 	hnode;
 	struct rb_node 	rbnode;
@@ -211,9 +213,29 @@ void test_hashtable()
 	}	
 }
 
+void test_slist()
+{
+	slist_t list = {0};
+	slist_init(&list);
+
+	for (int i =0; i < 100; i++) {
+		node_t* node = (node_t*)malloc(sizeof(node_t));
+		memset(node, 0, sizeof(node_t));
+		node->id = i;
+		slist_add(&list, &node->snode);
+	}
+	
+	node_t* pos = NULL;
+	slist_for_each_safe(pos, &list, node_t, snode) {
+		free(pos);
+		pos = NULL;
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	while(true) {
+	test_slist();
 	test_dlist();
 	test_hashtable();
 	test_rbtree();

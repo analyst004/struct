@@ -6,6 +6,7 @@ SET(SRC_LIST
 avltree.cpp
 hashtable.cpp
 rbtree.c
+cmpxchg.asm
 )
 
 #static library

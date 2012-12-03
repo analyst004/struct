@@ -13,7 +13,7 @@
 #define __X86_CASE_B	1
 #define __X86_CASE_W	2
 #define __X86_CASE_L	4
-#ifdef CONFIG_64BIT
+#ifdef __amd64__
 #define __X86_CASE_Q	8
 #else
 #define	__X86_CASE_Q	-1		/* sizeof will never return -1 */
@@ -155,7 +155,7 @@ win_xchg(
 
 static inline
 uint32_t
-__fastcall
+__stdcall
 win_cmpxchg(
     uint32_t volatile *Destination,
     uint32_t Exchange,
