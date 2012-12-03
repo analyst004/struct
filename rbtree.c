@@ -57,7 +57,7 @@ void rb_set_black(struct rb_node *rb)
 
 struct rb_node *rb_red_parent(struct rb_node *red)
 {
-	return (struct rb_node *)red->__rb_parent_color;
+	return (struct rb_node *)(intptr_t)red->__rb_parent_color;
 }
 
 /*

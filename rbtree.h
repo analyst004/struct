@@ -47,7 +47,7 @@ struct rb_root {
 };
 
 
-#define rb_parent(r)   ((struct rb_node *)((r)->__rb_parent_color & ~3))
+#define rb_parent(r)   ((struct rb_node *)(intptr_t)((r)->__rb_parent_color & ~3))
 
 #define RB_ROOT	(struct rb_root) { NULL, }
 #define	rb_entry(ptr, type, member) container_of(ptr, type, member)
@@ -56,9 +56,9 @@ struct rb_root {
 
 /* 'empty' nodes are nodes that are known not to be inserted in an rbree */
 #define RB_EMPTY_NODE(node)  \
-	((node)->__rb_parent_color == (unsigned long)(node))
+	((node)->__rb_parent_color == (unsigned long)(intptr_t)(node))
 #define RB_CLEAR_NODE(node)  \
-	((node)->__rb_parent_color = (unsigned long)(node))
+	((node)->__rb_parent_color = (unsigned long)(intptr_t)(node))
 
 
 void rb_insert_color(struct rb_node *, struct rb_root *);
@@ -80,7 +80,7 @@ static void rb_link_node(
     struct rb_node * parent,
 		struct rb_node ** rb_link)
 {
-	node->__rb_parent_color = (unsigned long)parent;
+	node->__rb_parent_color = (unsigned long)(intptr_t)parent;
 	node->rb_left = node->rb_right = NULL;
 
 	*rb_link = node;
