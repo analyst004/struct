@@ -2,7 +2,9 @@
 #define ASM_X86_CMPXCHG_H
 
 //#include <asm/alternative.h> /* Provides LOCK_PREFIX */
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 /*
  * Constants for operation sizes. On 32-bit, the 64-bit size it set to
  * -1 because sizeof will never return -1, thereby making those switch
@@ -57,34 +59,16 @@
 		__ret;							\
 	})
 #else
-static inline
-uint32_t
-__fastcall
-win_xchg(
-    uint32_t volatile *Target,
-    uint32_t Value
-    )
-{
-//#if defined(_MSC_VER)
-    __asm {
-        mov     eax, Value
-        mov     ecx, Target
-        xchg    [ecx], eax
-    }
- /*
-#else
-    __asm__
-    (
-    	"mov _Value, %eax \n"
-    	"mov $Target, %ecx \n"
-    	"xchg  %eax, (%ecx)\n"
-   	);
-#endif
-*/
-}
-
+// uint32_t
+// __stdcall
+// win_xchg(
+//     uint32_t volatile *Target,
+//     uint32_t Value
+//     );
+#include <windows.h>
 #define __xchg_op(ptr, arg, op, lock)	\
-	win_xchg((volatile uint32_t*)ptr, arg)
+	InterlockedExchange((volatile LONG*)ptr, arg)
+
 #endif
 
 
@@ -153,26 +137,17 @@ win_xchg(
 })
 #else 
 
-static inline
-uint32_t
-__stdcall
-win_cmpxchg(
-    uint32_t volatile *Destination,
-    uint32_t Exchange,
-    uint32_t Comperand
-    )
-{
-    __asm {
-        mov     eax, Comperand
-        mov     ecx, Destination
-        mov     edx, Exchange
-        cmpxchg [ecx], edx
-    }
-}
+// uint32_t
+// __stdcall
+// win_cmpxchg(
+//     uint32_t volatile *Destination,
+//     uint32_t Exchange,
+//     uint32_t Comperand
+//     );
 
 
 #define __raw_cmpxchg(ptr, old, _new, size, lock)			\
-	win_cmpxchg((volatile uint32_t*)ptr, (uint32_t)_new, (uint32_t)old)
+	InterlockedCompareExchange((volatile LONG*)ptr, (uint32_t)_new, (uint32_t)old)
 /*
 {	\
 	uint32_t __ret;	\
@@ -193,5 +168,10 @@ win_cmpxchg(
 
 #define cmpxchg(ptr, old, _new)						\
 	__cmpxchg(ptr, old, _new, sizeof(*(ptr)))
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* ASM_X86_CMPXCHG_H */

@@ -2,11 +2,23 @@
 # by analyst004
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 PROJECT(struct)
+
+#SET(CAN_USE_ASSEMBLER TRUE)
+#IF(MSVC)
+
+#ENABLE_LANGUAGE(ASM_MASM)
+#IF( "${CMAKE_SIZEOF_VOID_P}" STREQUAL "4" )
+#SET(ASM_SRC cmpxchg_x86.asm)
+#ELSE()
+#SET(ASM_SRC cmpxchg_x64.asm)
+#ENDIF()
+
+#ENDIF(MSVC)
+
 SET(SRC_LIST
 avltree.cpp
 hashtable.cpp
 rbtree.c
-cmpxchg.asm
 )
 
 #static library

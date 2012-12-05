@@ -288,7 +288,7 @@ errno_t LoadAvlTree(
 		uint32_t min_key = 0;
 		uint32_t max_key = 0;
 		int      data_len = 0;
-		int read_len = 0;
+		size_t read_len = 0;
 		read_len = fread(&min_key, sizeof(min_key), 1, file);
 		if (read_len != sizeof(min_key)) {
 			return errno;
@@ -336,7 +336,7 @@ errno_t SaveAvlTree(avltree_t* tree, FILE* file, int32_t* size)
 	if (ret != 0) {
 		return ret;
 	}
-	int write_len = 0;
+	size_t write_len = 0;
 	write_len = fwrite(&tree->min_key, sizeof(tree->min_key), 1, file);
 	if (write_len != sizeof(tree->min_key)) {
 		return errno;
