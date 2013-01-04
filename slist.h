@@ -189,4 +189,4 @@ static inline snode_t *slist_del_all(slist_t *head)
     i != NULL && ((t = i->next) == NULL || t != NULL) && ((var) = container_of(i, type, member)) != NULL; \
     i = t, slist_del_all(list))
 
-#endif /* LLIST_H */
+#endif /* _SLIST_H_KIMZHANG */
