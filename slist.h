@@ -169,6 +169,20 @@ static inline bool slist_add(slist_t *head, snode_t *new_node)
 	return old_entry == NULL;
 }
 
+static inline snode_t* slist_remove_head(slist_t* head)
+{
+	snode_t *entry, *old_entry, *new_entry;
+	entry = head->first;
+	for(;;){
+		old_entry = entry;
+		new_entry = entry->next;
+		entry = (snode_t*)cmpxchg(&head->first, old_entry, new_entry);
+		if (entry == old_entry)
+			break;
+	}
+
+	return old_entry;
+}
 
 /**
  * llist_del_all - delete all entries from lock-less list

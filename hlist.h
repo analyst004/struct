@@ -6,7 +6,7 @@
  * too wasteful.
  * You lose the ability to access the tail in O(1).
  */
-
+#include "contain.h"
 typedef struct hlist_head {
 	struct hlist_node *first;
 }hlist_t;
@@ -177,6 +177,13 @@ static inline void hlist_move_list(hlist_t *old, hlist_t *to)
 	hlist_t	name[size]; for (int i=0; i<size; i++) INIT_HLIST_HEAD(&name[i]);
 
 #define HTABLE_INDEX(h, s) ((h) & (s-1))
+
+static inline
+void htable_init(hlist_t* list, int size)
+{
+	for (int i=0; i<size; i++) 
+		INIT_HLIST_HEAD(&list[i]);
+}
 
 static inline
 hlist_t* htable_burket(hlist_t* table, int burk_size, uint32_t hash)
