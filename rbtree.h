@@ -29,8 +29,6 @@
 #ifndef	_RBTREE_H
 #define	_RBTREE_H
 
-//#include <linux/kernel.h>
-//#include <linux/stddef.h>
 #include "typedef.h"
 #ifdef __cplusplus
 extern "C" {

@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "typedef.h"
 #include "rblist.h"
 
 int rblist__add_node(struct rblist *rblist, const void *new_entry)
@@ -72,7 +72,7 @@ struct rb_node *rblist__find(struct rblist *rblist, const void *entry)
 void rblist__init(struct rblist *rblist)
 {
 	if (rblist != NULL) {
-		rblist->entries	 = RB_ROOT;
+		rblist->entries.rb_node	 = NULL/*RB_ROOT*/;
 		rblist->nr_entries = 0;
 	}
 

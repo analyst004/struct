@@ -11,6 +11,7 @@
 #include "hlist.h"
 #include "slist.h"
 #include "rbtree.h"
+#include "strlist.h"
 
 #ifdef __GNUC__
 #ifdef __MINGW32__
@@ -145,6 +146,36 @@ void test_rbtree()
 	printf("Count :%d\n", count);
 }
 
+void test_strlist()
+{
+	 strlist_t* list = strlist_new(true, NULL);
+	 strlist_add(list, "AAAAAA");
+	 strlist_add(list, "BBBBBB");
+	 strlist_add(list, "CCCCCC");
+	 strlist_add(list, "DDDDDD");
+	 strlist_add(list, "EEEEEE");
+	 strlist_add(list, "FFFFFF");
+
+	 unsigned int count = strlist_nr_entries(list);
+	 printf("strlist count: %d\n", count);
+	 for( unsigned int i=0; i<count; i++) {
+	 	strnode_t* node = strlist_entry(list, i);
+	 	printf("strlist node: %s\n", node->s);
+	 }
+
+
+	 for(strnode_t* it = strlist_first(list);
+	 	 it != NULL; 
+	 	 it = strlist_next(it)) {
+	 	printf("strlist node: %s\n", it->s);
+	 }
+
+	 strnode_t* node = strlist_find(list, "DDDDDD");
+	 printf("find string node:%s", node->s);
+
+	 strlist_delete(list);
+}
+
 void test_dlist()
 {
 	dlist_t 	list;
@@ -239,5 +270,6 @@ int main(int argc, char* argv[])
 	test_dlist();
 	test_hashtable();
 	test_rbtree();
+	test_strlist();
 	}
 }

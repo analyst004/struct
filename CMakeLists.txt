@@ -19,6 +19,9 @@ SET(SRC_LIST
 avltree.cpp
 hashtable.cpp
 rbtree.c
+rblist.cpp
+strlist.cpp
+intlist.cpp
 )
 
 #static library

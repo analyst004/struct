@@ -1,59 +1,58 @@
 #ifndef __PERF_STRLIST_H
 #define __PERF_STRLIST_H
 
-#include <linux/rbtree.h>
-#include <stdbool.h>
-
+#include "rbtree.h"
 #include "rblist.h"
 
-struct str_node {
+typedef struct str_node {
 	struct rb_node rb_node;
 	const char     *s;
-};
+}strnode_t;
 
-struct strlist {
+typedef struct strlist {
 	struct rblist rblist;
 	bool	       dupstr;
-};
+}strlist_t;
 
-struct strlist *strlist__new(bool dupstr, const char *slist);
-void strlist__delete(struct strlist *self);
+strlist_t *strlist_new(bool dupstr, const char *slist);
+void strlist_delete(strlist_t *self);
 
-void strlist__remove(struct strlist *self, struct str_node *sn);
-int strlist__load(struct strlist *self, const char *filename);
-int strlist__add(struct strlist *self, const char *str);
+void strlist_remove(strlist_t *self, strnode_t *sn);
+int strlist_load(strlist_t *self, const char *filename);
+int strlist_add(strlist_t *self, const char *str);
 
-struct str_node *strlist__entry(const struct strlist *self, unsigned int idx);
-struct str_node *strlist__find(struct strlist *self, const char *entry);
+strnode_t *strlist_entry(const strlist_t *self, unsigned int idx);
+strnode_t *strlist_find(strlist_t *self, const char *entry);
 
-static inline bool strlist__has_entry(struct strlist *self, const char *entry)
+static inline bool strlist_has_entry(strlist_t *self, const char *entry)
 {
-	return strlist__find(self, entry) != NULL;
+	return strlist_find(self, entry) != NULL;
 }
 
-static inline bool strlist__empty(const struct strlist *self)
+static inline bool strlist_empty(const strlist_t *self)
 {
 	return rblist__empty(&self->rblist);
 }
 
-static inline unsigned int strlist__nr_entries(const struct strlist *self)
+static inline unsigned int strlist_nr_entries(const strlist_t *self)
 {
 	return rblist__nr_entries(&self->rblist);
 }
 
 /* For strlist iteration */
-static inline struct str_node *strlist__first(struct strlist *self)
+static inline strnode_t *strlist_first(strlist_t *self)
 {
 	struct rb_node *rn = rb_first(&self->rblist.entries);
-	return rn ? rb_entry(rn, struct str_node, rb_node) : NULL;
+	return rn ? (strnode_t*)rb_entry(rn, strnode_t, rb_node) : NULL;
 }
-static inline struct str_node *strlist__next(struct str_node *sn)
+
+static inline strnode_t *strlist_next(strnode_t *sn)
 {
 	struct rb_node *rn;
 	if (!sn)
 		return NULL;
 	rn = rb_next(&sn->rb_node);
-	return rn ? rb_entry(rn, struct str_node, rb_node) : NULL;
+	return rn ? (strnode_t*)rb_entry(rn, strnode_t, rb_node) : NULL;
 }
 
 /**
@@ -61,7 +60,7 @@ static inline struct str_node *strlist__next(struct str_node *sn)
  * @pos:	the &struct str_node to use as a loop cursor.
  * @self:	the &struct strlist for loop.
  */
-#define strlist__for_each(pos, self)	\
+#define strlist_for_each(pos, self)	\
 	for (pos = strlist__first(self); pos; pos = strlist__next(pos))
 
 /**
@@ -71,9 +70,9 @@ static inline struct str_node *strlist__next(struct str_node *sn)
  * @n:		another &struct str_node to use as temporary storage.
  * @self:	the &struct strlist for loop.
  */
-#define strlist__for_each_safe(pos, n, self)	\
+#define strlist_for_each_safe(pos, n, self)	\
 	for (pos = strlist__first(self), n = strlist__next(pos); pos;\
 	     pos = n, n = strlist__next(n))
 
-int strlist__parse_list(struct strlist *self, const char *s);
+int strlist_parse_list(strlist_t *self, const char *s);
 #endif /* __PERF_STRLIST_H */

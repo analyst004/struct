@@ -4,46 +4,46 @@
 #include "rbtree.h"
 #include "rblist.h"
 
-struct int_node {
+typedef struct int_node {
 	struct rb_node rb_node;
 	int i;
-};
+}intnode_t;
 
-struct intlist {
+typedef struct intlist {
 	struct rblist rblist;
-};
+}intlist_t;
 
-struct intlist *intlist__new(void);
-void intlist__delete(struct intlist *ilist);
+intlist_t *intlist__new(void);
+void intlist__delete(intlist_t *ilist);
 
-void intlist__remove(struct intlist *ilist, struct int_node *in);
-int intlist__add(struct intlist *ilist, int i);
+void intlist__remove(intlist_t *ilist, struct int_node *in);
+int intlist__add(intlist_t *ilist, int i);
 
-struct int_node *intlist__entry(const struct intlist *ilist, unsigned int idx);
-struct int_node *intlist__find(struct intlist *ilist, int i);
+intnode_t *intlist__entry(const intlist_t *ilist, unsigned int idx);
+intnode_t *intlist__find(intlist_t *ilist, int i);
 
-static inline bool intlist__has_entry(struct intlist *ilist, int i)
+static inline bool intlist__has_entry(intlist_t *ilist, int i)
 {
 	return intlist__find(ilist, i) != NULL;
 }
 
-static inline bool intlist__empty(const struct intlist *ilist)
+static inline bool intlist__empty(const intlist_t *ilist)
 {
 	return rblist__empty(&ilist->rblist);
 }
 
-static inline unsigned int intlist__nr_entries(const struct intlist *ilist)
+static inline unsigned int intlist__nr_entries(const intlist_t *ilist)
 {
 	return rblist__nr_entries(&ilist->rblist);
 }
 
 /* For intlist iteration */
-static inline struct int_node *intlist__first(struct intlist *ilist)
+static inline intnode_t *intlist__first(intlist_t *ilist)
 {
 	struct rb_node *rn = rb_first(&ilist->rblist.entries);
-	return rn ? rb_entry(rn, struct int_node, rb_node) : NULL;
+	return rn ? rb_entry(rn, intnode_t, rb_node) : NULL;
 }
-static inline struct int_node *intlist__next(struct int_node *in)
+static inline intnode_t *intlist__next(intnode_t *in)
 {
 	struct rb_node *rn;
 	if (!in)
